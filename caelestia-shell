@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+
+# Quick launcher for caelestia-shell
+# This script provides a simple way to run caelestia-shell with proper environment setup
+
+set -euo pipefail
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Set environment variables
+export QT_QPA_PLATFORM=wayland
+
+# Set beat detector path
+if [[ -z "${CAELESTIA_BD_PATH:-}" ]]; then
+    if [[ -x "$HOME/.local/lib/caelestia/beat_detector" ]]; then
+        export CAELESTIA_BD_PATH="$HOME/.local/lib/caelestia/beat_detector"
+    elif [[ -x "$SCRIPT_DIR/beat_detector" ]]; then
+        export CAELESTIA_BD_PATH="$SCRIPT_DIR/beat_detector"
+    fi
+fi
+
+# Function to show help
+show_help() {
+    echo "Caelestia Shell for NixOS"
+    echo ""
+    echo "Usage: $0 [OPTION]"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help     Show this help message"
+    echo "  -v, --version  Show version information"
+    echo "  -c, --config   Show configuration file location"
+    echo "  -b, --build    Build beat detector"
+    echo "  -i, --install  Run installation script"
+    echo "  --ipc TARGET FUNCTION [ARGS...]  Execute IPC command"
+    echo ""
+    echo "Examples:"
+    echo "  $0                           # Start the shell"
+    echo "  $0 --ipc mpris playPause     # Toggle media playback"
+    echo "  $0 --ipc lock lock           # Lock the screen"
+    echo "  $0 --ipc drawers list        # List available drawers"
+    echo ""
+}
+
+# Function to show version
+show_version() {
+    echo "Caelestia Shell for NixOS v1.0.0"
+    echo "Based on caelestia-shell by caelestia-dots"
+    echo "Adapted for NixOS with quickshell native IPC"
+}
+
+# Function to show config location
+show_config() {
+    echo "Configuration file: $HOME/.config/caelestia/shell.json"
+    echo "Wallpapers directory: ~/Pictures/Wallpapers"
+    echo "Beat detector: ${CAELESTIA_BD_PATH:-not found}"
+    echo "Shell directory: $SCRIPT_DIR"
+}
+
+# Function to build beat detector
+build_beat_detector() {
+    if [[ -x "$SCRIPT_DIR/build-beat-detector.sh" ]]; then
+        exec "$SCRIPT_DIR/build-beat-detector.sh"
+    else
+        echo "Error: Build script not found"
+        exit 1
+    fi
+}
+
+# Function to run installation
+run_install() {
+    if [[ -x "$SCRIPT_DIR/install-nixos.sh" ]]; then
+        exec "$SCRIPT_DIR/install-nixos.sh"
+    else
+        echo "Error: Installation script not found"
+        exit 1
+    fi
+}
+
+# Function to execute IPC command
+execute_ipc() {
+    if ! command -v quickshell &> /dev/null; then
+        echo "Error: quickshell not found in PATH"
+        exit 1
+    fi
+    
+    local target="$1"
+    local function="$2"
+    shift 2
+    
+    if [[ $# -eq 0 ]]; then
+        quickshell --ipc "$target" "$function"
+    else
+        quickshell --ipc "$target" "$function" "$@"
+    fi
+}
+
+# Function to start the shell
+start_shell() {
+    # Check if quickshell is available
+    if ! command -v quickshell &> /dev/null; then
+        echo "Error: quickshell not found in PATH"
+        echo "Please install quickshell or add it to your PATH"
+        exit 1
+    fi
+    
+    # Check if shell.qml exists
+    if [[ ! -f "$SCRIPT_DIR/shell.qml" ]]; then
+        echo "Error: shell.qml not found in $SCRIPT_DIR"
+        echo "Please ensure you're running this script from the caelestia-shell directory"
+        exit 1
+    fi
+    
+    # Create config directory if it doesn't exist
+    mkdir -p "$HOME/.config/caelestia"
+    
+    echo "Starting caelestia-shell..."
+    echo "Directory: $SCRIPT_DIR"
+    echo "Beat detector: ${CAELESTIA_BD_PATH:-not found}"
+    echo ""
+    
+    # Use the run-nixos.sh script if available, otherwise run quickshell directly
+    if [[ -x "$SCRIPT_DIR/run-nixos.sh" ]]; then
+        exec "$SCRIPT_DIR/run-nixos.sh"
+    else
+        exec quickshell -p "$SCRIPT_DIR"
+    fi
+}
+
+# Parse command line arguments
+case "${1:-}" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+    -v|--version)
+        show_version
+        exit 0
+        ;;
+    -c|--config)
+        show_config
+        exit 0
+        ;;
+    -b|--build)
+        build_beat_detector
+        exit 0
+        ;;
+    -i|--install)
+        run_install
+        exit 0
+        ;;
+    --ipc)
+        if [[ $# -lt 3 ]]; then
+            echo "Error: IPC command requires at least target and function"
+            echo "Usage: $0 --ipc TARGET FUNCTION [ARGS...]"
+            exit 1
+        fi
+        shift  # Remove --ipc
+        execute_ipc "$@"
+        exit 0
+        ;;
+    "")
+        # No arguments, start the shell
+        start_shell
+        ;;
+    *)
+        echo "Error: Unknown option '$1'"
+        echo "Use '$0 --help' for usage information"
+        exit 1
+        ;;
+esac

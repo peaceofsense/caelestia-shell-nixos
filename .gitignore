@@ -1,0 +1,41 @@
+# Build outputs
+beat_detector
+*.o
+*.so
+*.a
+
+# Nix build results
+result
+result-*
+
+# Local configuration
+shell.json
+
+# Logs
+*.log
+beat_log_*.txt
+
+# Cache directories
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local development
+.env
+.env.local
+
+# User-specific paths
+.local/
