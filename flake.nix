@@ -253,19 +253,19 @@ EOF
             '';
             
             # Required system packages
-            environment.systemPackages = with pkgs; [
-              ddcutil
-              brightnessctl
-              cava
-              networkmanager
-              lm_sensors
-              fish
-              grim
-              swappy
-              libqalculate
-              material-symbols
-              (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
-            ];
+            # environment.systemPackages = with pkgs; [
+            #   ddcutil
+            #   brightnessctl
+            #   cava
+            #  networkmanager
+            #   lm_sensors
+            #   fish
+            #   grim
+            #   swappy
+            #   libqalculate
+            #   material-symbols
+            #   (nerdfonts.override { fonts = [ "JetBrainsMono" ]; })
+            # ];
             
             # Enable required services
             services.pipewire.enable = mkDefault true;
